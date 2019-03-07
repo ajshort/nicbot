@@ -1,0 +1,14 @@
+[
+  {
+    "value": "Day DO",
+    "synonyms": ["Day DO", "DO", "Duty Officer"]
+  },
+  {
+    "value": "Night DO",
+    "synonyms": ["Night DO", "Night Duty Officer", "AHDO"]
+  },
+  {
+    "value": "DOO",
+    "synonyms": ["DOO", "Duty Ops Oficer", "Duty Operations Officer"]
+  }
+]
