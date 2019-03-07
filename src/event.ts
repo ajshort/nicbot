@@ -1,4 +1,5 @@
-import { BOT_ID, BOT_USER_ID } from "./config";
+import { BOT_ID, BOT_USER_ID, CHANNELS, VEHICLES } from "./config";
+import { parseProtoStruct } from "./utils";
 
 import { WebClient } from "@slack/client";
 import { createEventAdapter } from "@slack/events-api";
@@ -26,8 +27,9 @@ events.on("message", async (event) => {
 
   const direct = event.channel_type === "im";
   const mentioned = event.text.includes(`<@${BOT_USER_ID}>`);
+  const lurk = event.channel === CHANNELS["sms-gateway"];
 
-  if (!direct && !mentioned) {
+  if (!direct && !mentioned && !lurk) {
     return;
   }
 
@@ -66,8 +68,22 @@ events.on("message", async (event) => {
     }
 
     const intent = result.intent.displayName;
+    const parameters = parseProtoStruct(result.parameters);
 
-    output.push(intent);
+    if (intent === "Take Vehicles") {
+      const { name, date } = parameters;
+      const vehicles = parameters.vehicles.filter((v) => VEHICLES.includes(v));
+
+      if (vehicles.length === 0) {
+        continue;
+      }
+
+      await Promise.all(vehicles.map((vehicle) => {
+        return vehicles.setVehicleWith(vehicle, name, new Date(date), sentence);
+      }));
+
+      output.push(`:car: I've marked ${vehicles.join(", ")} as taken`);
+    }
   }
 
   if (output.length > 0) {
