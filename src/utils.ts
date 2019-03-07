@@ -10,8 +10,8 @@ export function parseProtoValue(value) {
 export function parseProtoStruct(proto): { [key: string]: any } {
   const result = {};
 
-  for (const key of proto.fields) {
-    result[key] = parseProtoValue(proto.fields[key]);
+  for (const [key, value] of Object.entries(proto.fields)) {
+    result[key] = parseProtoValue(value);
   }
 
   return result;
