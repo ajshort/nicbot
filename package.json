@@ -1,5 +1,6 @@
 {
   "name": "nicbot",
+  "version": "0.0.0",
   "private": true,
   "author": "Andrew Short <andrewjshort@gmail.com>",
   "scripts": {
