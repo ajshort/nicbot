@@ -1,6 +1,6 @@
 import { BOT_ID, BOT_USER_ID, CHANNELS, VEHICLES } from "./config";
 import { parseProtoStruct } from "./utils";
-import { getVehicleWith, setVehicleReturned, setVehicleWith } from "./vehicles";
+import { getVehiclesOut, getVehicleWith, setVehicleReturned, setVehicleWith } from "./vehicles";
 
 import { WebClient } from "@slack/client";
 import { createEventAdapter } from "@slack/events-api";
@@ -95,6 +95,10 @@ events.on("message", async (event) => {
 
       output.push(`:house: I've marked ${vehicles.join(", ")} as returned`);
     } else if (intent === "Locate Vehicle") {
+      if (!direct && !mentioned) {
+        continue;
+      }
+
       const vehicle = parameters.vehicle;
 
       if (!VEHICLES.includes(vehicle)) {
@@ -111,6 +115,24 @@ events.on("message", async (event) => {
         }
       } else {
         output.push(`:house: AFAIK ${vehicle} is at HQ`);
+      }
+    } else if (intent === "Locate Vehicles") {
+      if (!direct && !mentioned) {
+        continue;
+      }
+
+      const out = await getVehiclesOut();
+
+      if (out && out.length > 0) {
+        output.push("The following vehicles are away: " + out.map((info) => {
+          if (info.with) {
+            return `${info.vehicle} with ${info.with}`;
+          } else {
+            return info.vehicle;
+          }
+        }).join(", "));
+      } else {
+        output.push(":house: AFAIK all vehicles are at LHQ");
       }
     }
   }
