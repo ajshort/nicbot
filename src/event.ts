@@ -5,7 +5,18 @@ import { createEventAdapter } from "@slack/events-api";
 
 const events = createEventAdapter(process.env.SLACK_SIGNING_SECRET);
 
+// Keep track of the most recent seen message GUIDs so we only respond once.
+let seen = [];
+
 events.on("message", async (event) => {
+  // Ignore messags we've already seen.
+  if (seen.includes(event.client_msg_id)) {
+    return;
+  }
+
+  seen.unshift(event.client_msg_id);
+  seen = seen.slice(0, 10);
+
   // Ignore messages from ourselves.
   if (event.bot_id === BOT_ID) {
     return;
