@@ -4,6 +4,10 @@ import { Datastore } from "@google-cloud/datastore";
 
 const datastore = new Datastore();
 
+export async function getVehicleWith(vehicle: string) {
+  return datastore.get(["vehicle", vehicle]);
+}
+
 export async function setVehicleWith(vehicle: string, wth: string, until: Date, message: string) {
   if (!VEHICLES.includes(vehicle)) {
     throw new Error(`Unknown vehicle ${vehicle}`);

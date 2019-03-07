@@ -1,6 +1,6 @@
 import { BOT_ID, BOT_USER_ID, CHANNELS, VEHICLES } from "./config";
 import { parseProtoStruct } from "./utils";
-import { setVehicleReturned, setVehicleWith } from "./vehicles";
+import { getVehicleWith, setVehicleReturned, setVehicleWith } from "./vehicles";
 
 import { WebClient } from "@slack/client";
 import { createEventAdapter } from "@slack/events-api";
@@ -94,6 +94,24 @@ events.on("message", async (event) => {
       await Promise.all(vehicles.map((vehicle) => setVehicleReturned(vehicle)));
 
       output.push(`:house: I've marked ${vehicles.join(", ")} as returned`);
+    } else if (intent === "Locate Vehicle") {
+      const vehicle = parameters.vehicle;
+
+      if (!VEHICLES.includes(vehicle)) {
+        continue;
+      }
+
+      const info = await getVehicleWith(vehicle);
+
+      if (info) {
+        if (info.with) {
+          output.push(`${vehicle} is out with ${info.with} :information_desk_peson:`);
+        } else {
+          output.push(`${vehicle} is away but I\'m not sure who with :shrug:`);
+        }
+      } else {
+        output.push(`:house: AFAIK ${vehicle} is at HQ`);
+      }
     }
   }
 
