@@ -1,3 +1,8 @@
+import * as dotenv from "dotenv";
+
+dotenv.config();
+
+import * as event from "./event";
 import * as slashCommand from "./slash-command";
 
 import * as bodyParser from "body-parser";
@@ -11,6 +16,8 @@ app.get("/", (_req, res) => {
 });
 
 app.post("/slash-command", bodyParser.urlencoded({ extended: true }), slashCommand.handler);
+
+app.use("/event", event.handler);
 
 const listener = app.listen(port, () => {
   console.log(`Listening on port ${port}...`);
