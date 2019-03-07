@@ -103,6 +103,7 @@ events.on("message", async (event) => {
     await client.chat.postMessage({
       channel: event.channel,
       text: output.join("\n"),
+      thread_ts: event.ts,
     });
   }
 });
