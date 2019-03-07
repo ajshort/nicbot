@@ -3,11 +3,13 @@
   "private": true,
   "author": "Andrew Short <andrewjshort@gmail.com>",
   "scripts": {
+    "watch": "tsc -w",
     "gcp-build": "tsc",
     "start": "node ./dist/index.js",
     "deploy": "gcloud app deploy"
   },
   "dependencies": {
+    "body-parser": "^1.18.3",
     "express": "^4.16.4",
     "typescript": "^3.3.3333"
   },
