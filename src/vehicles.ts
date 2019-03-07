@@ -13,3 +13,7 @@ export async function setVehicleWith(vehicle: string, wth: string, until: Date, 
   const data = { message, until, vehicle, with: wth };
   await datastore.upsert({ key, data });
 }
+
+export async function setVehicleReturned(vehicle: string) {
+  await datastore.delete(datastore.key(["vehicle", vehicle]));
+}

@@ -1,6 +1,6 @@
 import { BOT_ID, BOT_USER_ID, CHANNELS, VEHICLES } from "./config";
 import { parseProtoStruct } from "./utils";
-import { setVehicleWith } from "./vehicles";
+import { setVehicleReturned, setVehicleWith } from "./vehicles";
 
 import { WebClient } from "@slack/client";
 import { createEventAdapter } from "@slack/events-api";
@@ -73,7 +73,7 @@ events.on("message", async (event) => {
 
     if (intent === "Take Vehicles") {
       const { name, date } = parameters;
-      const vehicles: string[] = parameters.vehicles.filter((v) => VEHICLES.includes(v));
+      const vehicles = parameters.vehicles.filter((v) => VEHICLES.includes(v));
 
       if (vehicles.length === 0) {
         continue;
@@ -84,6 +84,16 @@ events.on("message", async (event) => {
       }));
 
       output.push(`:car: I've marked ${vehicles.join(", ")} as taken`);
+    } else if (intent === "Return Vehicles") {
+      const vehicles = parameters.vehicles.filter((v) => VEHICLES.includes(v));
+
+      if (vehicles.length === 0) {
+        continue;
+      }
+
+      await Promise.all(vehicles.map((vehicle) => setVehicleReturned(vehicle)));
+
+      output.push(`:house: I've marked ${vehicles.join(", ")} as returned`);
     }
   }
 
