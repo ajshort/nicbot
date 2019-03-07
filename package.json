@@ -3,8 +3,9 @@
   "private": true,
   "author": "Andrew Short <andrewjshort@gmail.com>",
   "scripts": {
-    "watch": "tsc -w",
-    "gcp-build": "tsc",
+    "watch": "tsc -p . -w",
+    "build": "tsc -p .",
+    "gcp-build": "tsc -p .",
     "prestart": "node ./dist/download-dotenv.js",
     "start": "node ./dist/index.js",
     "deploy": "gcloud app deploy"
