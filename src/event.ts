@@ -2,6 +2,8 @@ import { BOT_ID, BOT_USER_ID } from "./config";
 
 import { WebClient } from "@slack/client";
 import { createEventAdapter } from "@slack/events-api";
+import { SessionsClient } from "dialogflow";
+import * as uuid from "uuid";
 
 const events = createEventAdapter(process.env.SLACK_SIGNING_SECRET);
 
@@ -29,12 +31,53 @@ events.on("message", async (event) => {
     return;
   }
 
-  const client = new WebClient(process.env.SLACK_BOT_ACCESS_TOKEN);
+  // Break up input into sentences and put each through dialogflow in a sesson.
+  let text: string = event.text;
 
-  await client.chat.postMessage({
-    channel: event.channel,
-    text: JSON.stringify(event),
-  });
+  // Other bots (gateway etc) send messages as attachments so read those.
+  if (!text && event.attachments && event.attachments.length === 1) {
+    text = event.attachments[0].title;
+  }
+
+  const sentences = text.split(/[.?!]/).map((s) => s.trim()).filter((s) => s.length > 0);
+
+  if (sentences.length === 0) {
+    return;
+  }
+
+  // Response sentences.
+  const output = [];
+
+  const sessions = new SessionsClient();
+  const sessionPath = sessions.sessionPath(process.env.DIALOGFLOW_PROJECT_ID, uuid.v4());
+
+  for (const sentence of sentences) {
+    const response = await sessions.detectIntent({
+      queryInput: {
+        text: { languageCode: "en-AU", text: sentence },
+      },
+      session: sessionPath,
+    });
+
+    const result = response[0].queryResult;
+
+    if (result.intentDetectionConfidence < 0.66) {
+      continue;
+    }
+
+    const intent = result.intent.displayName;
+
+    output.push(intent);
+  }
+
+  if (output.length > 0) {
+    const client = new WebClient(process.env.SLACK_BOT_ACCESS_TOKEN);
+
+    await client.chat.postMessage({
+      channel: event.channel,
+      text: output.join("\n"),
+    });
+  }
 });
 
 events.on("error", console.error);

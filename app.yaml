@@ -1,1 +1,4 @@
 runtime: nodejs10
+
+env_variables:
+  DIALOGFLOW_PROJECT_ID: nicbot
