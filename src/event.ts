@@ -28,7 +28,8 @@ events.on("message", async (event) => {
 
   const direct = event.channel_type === "im";
   const mentioned = event.text.includes(`<@${BOT_USER_ID}>`);
-  const lurk = event.channel === CHANNELS["sms-gateway"];
+  const lurk = event.channel === CHANNELS["bot-testing"] ||
+               event.channel === CHANNELS["sms-gateway"];
 
   if (!direct && !mentioned && !lurk) {
     return;
