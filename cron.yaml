@@ -1,0 +1,4 @@
+cron:
+- description: "generate BOM gifs"
+  url: /update-bom
+  schedule: every 4 minutes
