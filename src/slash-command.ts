@@ -1,4 +1,5 @@
-import * as bom from "./bom";
+import axios from "axios";
+import { createRadarGif, RADARS } from "./bom";
 
 function getRadarResponse() {
   return {
@@ -13,12 +14,18 @@ function getRadarResponse() {
 }
 
 export const handler = async (req, res) => {
-  if (req.body.command === "/radar") {
-    res.json(getRadarResponse());
-  } else if (req.body.command === "/wind") {
-    const gif = await bom.createRadarGif("IDR03I", "IDR033");
+  const data = req.body;
 
-    return {
+  if (data.command === "/radar") {
+    res.json(getRadarResponse());
+  } else if (data.command === "/wind") {
+    // Send immediate response.
+    req.status(200).send();
+
+    // Create the gif - this can take a while.
+    const gif = await createRadarGif(RADARS.wind, RADARS[128]);
+
+    await axios.post(data.response_url, {
       attachments: [{
         fallback: "http://www.bom.gov.au/products/IDR03I.loop.shtml",
         image_url: gif,
@@ -26,7 +33,7 @@ export const handler = async (req, res) => {
         title_link: "http://www.bom.gov.au/products/IDR03I.loop.shtml",
       }],
       response_type: "in_channel",
-    };
+    });
   } else {
     res.status(400).send("I don't know that command");
   }

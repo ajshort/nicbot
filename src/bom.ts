@@ -8,6 +8,14 @@ import * as path from "path";
 import * as FtpClient from "promise-ftp";
 import { promisify } from "util";
 
+export const RADARS = {
+  64: "IDR034",
+  128: "IDR033",
+  256: "IDR032",
+  512: "IDR031",
+  wind: "IDR03I",
+};
+
 const cache = fcd({ create: true, name: "bom" });
 
 async function download(ftp: FtpClient, filename: string) {
