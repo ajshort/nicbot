@@ -17,7 +17,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/update-bom", async (req, res) => {
-  await Promise.all(Object.keys(bom.RADARS).map(async (id) => {
+  for (const id of Object.keys(bom.RADARS)) {
     const foreground = bom.RADARS[id];
     const background = (foreground === bom.RADARS.wind) ? bom.RADARS[128] : undefined;
 
@@ -32,7 +32,7 @@ app.get("/update-bom", async (req, res) => {
         console.error(err);
       }
     }
-  }));
+  }
 
   res.send("🛰️ BOM has been gifified");
 });
