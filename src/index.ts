@@ -17,11 +17,22 @@ app.get("/", (req, res) => {
 });
 
 app.get("/update-bom", async (req, res) => {
-  await bom.createRadarGif(bom.RADARS[64]);
-  await bom.createRadarGif(bom.RADARS[128]);
-  await bom.createRadarGif(bom.RADARS[256]);
-  await bom.createRadarGif(bom.RADARS[512]);
-  await bom.createRadarGif(bom.RADARS.wind, bom.RADARS[128]);
+  await Promise.all(Object.keys(bom.RADARS).map(async (id) => {
+    const foreground = bom.RADARS[id];
+    const background = (foreground === bom.RADARS.wind) ? bom.RADARS[128] : undefined;
+
+    for (let i = 0; i < 3; ++i) {
+      console.log(`Giffing ${foreground} (attempt ${i + 1} / 3)`);
+
+      try {
+        const gif = await bom.createRadarGif(foreground, background);
+        await bom.setLatestGif(foreground, gif);
+        break;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }));
 
   res.send("🛰️ BOM has been gifified");
 });

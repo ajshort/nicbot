@@ -15,7 +15,7 @@ export const RADARS = {
 };
 
 async function download(ftp: FtpClient, filename: string, bucket: Bucket) {
-  const file = bucket.file(path.basename(filename));
+  const file = bucket.file("cache/" + path.basename(filename));
   const exists = (await file.exists())[0];
 
   if (!exists) {
@@ -49,11 +49,11 @@ export async function createRadarGif(id: string, background?: string) {
   // Get the overlays.
   const backgrounds = await Promise.all(underlays
     .map((underlay) => path.join("/anon/gen/radar_transparencies", `${background}.${underlay}.png`))
-    .map((filename) => download(ftp, filename, bucket).then(loadImage)));
+    .map((f) => download(ftp, f, bucket).then(loadImage)));
 
   const foregrounds = await Promise.all(overlays
     .map((overlay) => path.join("/anon/gen/radar_transparencies", `${background}.${overlay}.png`))
-    .map((filename) => download(ftp, filename, bucket).then(loadImage)));
+    .map((f) => download(ftp, f, bucket).then(loadImage)));
 
   // Get all remote images.
   const all = [];
@@ -79,8 +79,8 @@ export async function createRadarGif(id: string, background?: string) {
     .map((image) => download(ftp, image.filename, bucket).then(loadImage)));
 
   // Gifelate.
-  const basename = `${id}.${Date.now()}.gif`;
-  const target = bucket.file(basename);
+  const filename = `gifs/${id}.${Date.now()}.gif`;
+  const target = bucket.file(filename);
   const stream = target.createWriteStream();
 
   // Giffify.
@@ -125,5 +125,18 @@ export async function createRadarGif(id: string, background?: string) {
   await upload;
   await target.makePublic();
 
-  return `https://storage.googleapis.com/nicbot-radar/${basename}`;
+  return `https://storage.googleapis.com/nicbot-radar/${filename}`;
+}
+
+export async function setLatestGif(id: string, url: string) {
+  const storage = new Storage();
+  const bucket = await storage.bucket("nicbot-radar");
+  await bucket.file(id).save(url);
+}
+
+export async function getLatestGif(id) {
+  const storage = new Storage();
+  const bucket = await storage.bucket("nicbot-radar");
+  const buffer = (await bucket.file(id).download())[0];
+  return buffer.toString("utf-8");
 }

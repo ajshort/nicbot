@@ -1,36 +1,43 @@
 import axios from "axios";
-import { createRadarGif, RADARS } from "./bom";
+import { RequestHandler } from "express";
+import { getLatestGif, RADARS } from "./bom";
 
-function getRadarResponse() {
-  return {
-    attachments: [{
-      fallback: "http://www.bom.gov.au/products/IDR034.loop.shtml",
-      image_url: "http://www.sjcnet.id.au/dashboard/loop.gif?time=" + Date.now(),
-      title: "Wollongong Radar",
-      title_link: "http://www.bom.gov.au/products/IDR034.loop.shtml",
-    }],
-    response_type: "in_channel",
-  };
-}
-
-export const handler = async (req, res) => {
+export const handler: RequestHandler = async (req, res) => {
   const data = req.body;
 
   if (data.command === "/radar") {
-    res.json(getRadarResponse());
-  } else if (data.command === "/wind") {
+    const input = parseInt(data.text, 10);
+    const range = (input in RADARS) ? input : 128;
+
     // Send immediate response.
-    req.status(200).send();
+    res.status(200).send();
 
     // Create the gif - this can take a while.
-    const gif = await createRadarGif(RADARS.wind, RADARS[128]);
+    const id = RADARS[range];
+    const gif = await getLatestGif(id);
 
     await axios.post(data.response_url, {
       attachments: [{
-        fallback: "http://www.bom.gov.au/products/IDR03I.loop.shtml",
+        fallback: `http://www.bom.gov.au/products/${id}.loop.shtml`,
+        image_url: gif,
+        title: `${range}km Radar`,
+        title_link: `http://www.bom.gov.au/products/${id}.loop.shtml`,
+      }],
+      response_type: "in_channel",
+    });
+  } else if (data.command === "/wind") {
+    // Send immediate response.
+    res.status(200).send();
+
+    // Create the gif - this can take a while.
+    const gif = await getLatestGif(RADARS.wind);
+
+    await axios.post(data.response_url, {
+      attachments: [{
+        fallback: `http://www.bom.gov.au/products/${RADARS.wind}.loop.shtml`,
         image_url: gif,
         title: "Doppler Wind",
-        title_link: "http://www.bom.gov.au/products/IDR03I.loop.shtml",
+        title_link: `http://www.bom.gov.au/products/${RADARS.wind}.loop.shtml`,
       }],
       response_type: "in_channel",
     });
