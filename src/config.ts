@@ -3,6 +3,7 @@ export const BOT_USER_ID = "UGMLA582J";
 
 export const CHANNELS = {
   "bot-testing": "GGMB2GX18",
+  "dutyofficer-support": "CDFDMRHB8",
   "sms-gateway": "CA6D8RBA5",
 };
 
