@@ -25,8 +25,7 @@ app.get("/update-bom", async (req, res) => {
       console.log(`Giffing ${foreground} (attempt ${i + 1} / 3)`);
 
       try {
-        const gif = await bom.createRadarGif(foreground, background);
-        await bom.setLatestGif(foreground, gif);
+        await bom.createRadarGif(foreground, background);
         break;
       } catch (err) {
         console.error(err);

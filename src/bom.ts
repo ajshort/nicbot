@@ -1,7 +1,7 @@
 import { Bucket, Storage } from "@google-cloud/storage";
 import { createCanvas, loadImage } from "canvas";
-import * as fs from "fs";
 import * as GifEncoder from "gif-encoder";
+import { WritableStream } from "memory-streams";
 import * as moment from "moment";
 import * as path from "path";
 import * as FtpClient from "promise-ftp";
@@ -14,21 +14,17 @@ export const RADARS = {
   wind: "IDR03I",
 };
 
-async function download(ftp: FtpClient, filename: string, bucket: Bucket) {
-  const file = bucket.file("cache/" + path.basename(filename));
-  const exists = (await file.exists())[0];
+async function download(ftp: FtpClient, filename: string) {
+  const result = new WritableStream();
+  const stream = await ftp.get(filename);
 
-  if (!exists) {
-    const stream = await ftp.get(filename);
+  await new Promise((resolve, reject) => {
+    stream.on("close", resolve);
+    stream.on("error", reject);
+    stream.pipe(result);
+  });
 
-    await new Promise((resolve, reject) => {
-      stream.on("close", resolve);
-      stream.on("error", reject);
-      stream.pipe(file.createWriteStream());
-    });
-  }
-
-  return (await file.download())[0];
+  return result.toBuffer();
 }
 
 export async function createRadarGif(id: string, background?: string) {
@@ -49,11 +45,11 @@ export async function createRadarGif(id: string, background?: string) {
   // Get the overlays.
   const backgrounds = await Promise.all(underlays
     .map((underlay) => path.join("/anon/gen/radar_transparencies", `${background}.${underlay}.png`))
-    .map((f) => download(ftp, f, bucket).then(loadImage)));
+    .map((file) => download(ftp, file).then(loadImage)));
 
   const foregrounds = await Promise.all(overlays
     .map((overlay) => path.join("/anon/gen/radar_transparencies", `${background}.${overlay}.png`))
-    .map((f) => download(ftp, f, bucket).then(loadImage)));
+    .map((file) => download(ftp, file).then(loadImage)));
 
   // Get all remote images.
   const all = [];
@@ -76,10 +72,10 @@ export async function createRadarGif(id: string, background?: string) {
   const frames = await Promise.all(all
     .sort((a, b) => a.date.valueOf() - b.date.valueOf())
     .slice(-6)
-    .map((image) => download(ftp, image.filename, bucket).then(loadImage)));
+    .map((image) => download(ftp, image.filename).then(loadImage)));
 
   // Gifelate.
-  const filename = `gifs/${id}.${Date.now()}.gif`;
+  const filename = `latest/${id}.gif`;
   const target = bucket.file(filename);
   const stream = target.createWriteStream();
 
@@ -119,24 +115,29 @@ export async function createRadarGif(id: string, background?: string) {
     draw(frames[i]);
   }
 
+  ftp.end();
   gif.finish();
   stream.end();
 
   await upload;
-  await target.makePublic();
+
+  return target;
+}
+
+export async function getPublicGif(id: string) {
+  const storage = new Storage();
+  const bucket = await storage.bucket("nicbot-radar");
+  const file = bucket.file(`latest/${id}.gif`);
+  const updated = new Date((await file.getMetadata())[0].updated).getTime();
+
+  const filename = `public/${id}.${updated}.gif`;
+  const pub = bucket.file(filename);
+  const exists = (await pub.exists())[0];
+
+  if (!exists) {
+    await file.copy(pub);
+    await pub.makePublic();
+  }
 
   return `https://storage.googleapis.com/nicbot-radar/${filename}`;
-}
-
-export async function setLatestGif(id: string, url: string) {
-  const storage = new Storage();
-  const bucket = await storage.bucket("nicbot-radar");
-  await bucket.file(id).save(url);
-}
-
-export async function getLatestGif(id) {
-  const storage = new Storage();
-  const bucket = await storage.bucket("nicbot-radar");
-  const buffer = (await bucket.file(id).download())[0];
-  return buffer.toString("utf-8");
 }

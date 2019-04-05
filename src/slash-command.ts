@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { getLatestGif, RADARS } from "./bom";
+import { getPublicGif, RADARS } from "./bom";
 
 export const handler: RequestHandler = async (req, res) => {
   const data = req.body;
@@ -10,7 +10,7 @@ export const handler: RequestHandler = async (req, res) => {
 
     // Create the gif - this can take a while.
     const id = RADARS[range];
-    const gif = await getLatestGif(id);
+    const gif = await getPublicGif(id);
 
     res.json({
       attachments: [{
@@ -23,7 +23,7 @@ export const handler: RequestHandler = async (req, res) => {
     });
   } else if (data.command === "/wind") {
     // Create the gif - this can take a while.
-    const gif = await getLatestGif(RADARS.wind);
+    const gif = await getPublicGif(RADARS.wind);
 
     res.json({
       attachments: [{
