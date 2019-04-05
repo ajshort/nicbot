@@ -77,7 +77,7 @@ export async function createRadarGif(id: string, background?: string) {
   // Gifelate.
   const filename = `latest/${id}.gif`;
   const target = bucket.file(filename);
-  const stream = target.createWriteStream();
+  const stream = target.createWriteStream({ contentType: "image/gif" });
 
   // Giffify.
   const gif = new GifEncoder(512, 512);
