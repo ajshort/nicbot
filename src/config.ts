@@ -13,6 +13,7 @@ export const VEHICLES = [
   "DPT31",
   "DPT56",
   "G4",
+  "ISR56",
   "K4",
   "Storm Trailer",
   "WGC19",
