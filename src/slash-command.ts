@@ -18,7 +18,7 @@ export const handler: RequestHandler = async (req, res) => {
       attachments: [{
         fallback: `http://www.bom.gov.au/products/${id}.loop.shtml`,
         image_url: gif,
-        title: `${range}km Radar`,
+        title: `${range}km Radar (for <@${data.user_id}>)`,
         title_link: `http://www.bom.gov.au/products/${id}.loop.shtml`,
       }],
       response_type: "in_channel",
@@ -32,7 +32,7 @@ export const handler: RequestHandler = async (req, res) => {
       attachments: [{
         fallback: `http://www.bom.gov.au/products/${RADARS.wind}.loop.shtml`,
         image_url: gif,
-        title: "Doppler Wind",
+        title: `Doppler Wind (for <@${data.user_id}>)`,
         title_link: `http://www.bom.gov.au/products/${RADARS.wind}.loop.shtml`,
       }],
       response_type: "in_channel",
