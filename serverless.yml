@@ -1,0 +1,46 @@
+service: nicbot
+
+plugins:
+  - serverless-offline
+  - serverless-pseudo-parameters
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  profile: personal
+  environment:
+    RADAR_BUCKET: nicbot-radar-${self:provider.stage}
+    RADAR_LAMBDA: 'arn:aws:lambda:${self:provider.region}:#{AWS::AccountId}:function:${self:service}-${self:provider.stage}-radar-command'
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: 'arn:aws:s3:::${self:provider.environment.RADAR_BUCKET}/*'
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+      Resource: "*"
+
+functions:
+  command:
+    handler: src/slash-command.handler
+    events:
+      - http:
+          method: post
+          path: command
+  radar-command:
+    handler: src/radar-command.handler
+    timeout: 60
+  event:
+    handler: src/event.handler
+    events:
+      - http:
+          method: post
+          path: event
+
+resources:
+  Resources:
+    RadarBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: ${self:provider.environment.RADAR_BUCKET}

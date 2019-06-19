@@ -1,13 +1,13 @@
-export const BOT_ID = "BGM9LDYLF";
-export const BOT_USER_ID = "UGMLA582J";
+exports.BOT_ID = "BGM9LDYLF";
+exports.BOT_USER_ID = "UGMLA582J";
 
-export const CHANNELS = {
+exports.CHANNELS = {
   "bot-testing": "GGMB2GX18",
   "dutyofficer-support": "CDFDMRHB8",
   "sms-gateway": "CA6D8RBA5",
 };
 
-export const VEHICLES = [
+exports.VEHICLES = [
   "Ark Angel",
   "Cage Trailer",
   "DPT31",
@@ -24,10 +24,4 @@ export const VEHICLES = [
   "WOL55",
   "WOL56",
   "WOL57",
-];
-
-export const DUTY_OFFICERS = [
-  "Day DO",
-  "DOO",
-  "Night DO",
 ];

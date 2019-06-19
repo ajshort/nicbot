@@ -1,5 +1,7 @@
 dist/
 node_modules/
+.dynamodb/
+.serverless/
 
 .env
 

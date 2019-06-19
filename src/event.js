@@ -1,18 +1,12 @@
-import { BOT_ID, BOT_USER_ID, CHANNELS, VEHICLES } from "./config";
-import { parseProtoStruct } from "./utils";
-import { getVehiclesOut, getVehicleWith, setVehicleReturned, setVehicleWith } from "./vehicles";
+const { BOT_ID, BOT_USER_ID, CHANNELS, VEHICLES } = require('./config');
+const { parseProtoStruct } = require('./utils');
+const { getVehiclesOut, getVehicleWith, setVehicleReturned, setVehicleWith } = require('./vehicles');
 
-import { WebClient } from "@slack/client";
-import { createEventAdapter } from "@slack/events-api";
-import { SessionsClient } from "dialogflow";
-import * as uuid from "uuid";
+const { WebClient } = require('@slack/client');
+const { SessionClient } = require('dialogflow');
+const uuid = require('uuid');
 
-const events = createEventAdapter(process.env.SLACK_SIGNING_SECRET);
-
-// Keep track of the most recent seen message GUIDs so we only respond once.
-let seen = [];
-
-events.on("message", async (event) => {
+async function handleEvent(event) {
   // Ignore messags we've already seen.
   if (seen.includes(event.ts)) {
     return;
@@ -26,17 +20,17 @@ events.on("message", async (event) => {
     return;
   }
 
-  const direct = event.channel_type === "im";
+  const direct = event.channel_type === 'im';
   const mentioned = event.text.includes(`<@${BOT_USER_ID}>`);
-  const lurk = event.channel === CHANNELS["bot-testing"] ||
-               event.channel === CHANNELS["sms-gateway"];
+  const lurk = event.channel === CHANNELS['bot-testing'] ||
+               event.channel === CHANNELS['sms-gateway'];
 
   if (!direct && !mentioned && !lurk) {
     return;
   }
 
   // Break up input into sentences and put each through dialogflow in a sesson.
-  let text: string = event.text;
+  let text = event.text;
 
   // Other bots (gateway etc) send messages as attachments so read those.
   if (!text && event.attachments && event.attachments.length === 1) {
@@ -58,7 +52,7 @@ events.on("message", async (event) => {
   for (const sentence of sentences) {
     const response = await sessions.detectIntent({
       queryInput: {
-        text: { languageCode: "en-AU", text: sentence },
+        text: { languageCode: 'en-AU', text: sentence },
       },
       session: sessionPath,
     });
@@ -72,7 +66,7 @@ events.on("message", async (event) => {
     const intent = result.intent.displayName;
     const parameters = parseProtoStruct(result.parameters);
 
-    if (intent === "Take Vehicles") {
+    if (intent === 'Take Vehicles') {
       const { name, date } = parameters;
       const vehicles = parameters.vehicles.filter((v) => VEHICLES.includes(v));
 
@@ -84,8 +78,8 @@ events.on("message", async (event) => {
         return setVehicleWith(vehicle, name, new Date(date), sentence);
       }));
 
-      output.push(`:car: I've marked ${vehicles.join(", ")} as taken`);
-    } else if (intent === "Return Vehicles") {
+      output.push(`:car: I've marked ${vehicles.join(', ')} as taken`);
+    } else if (intent === 'Return Vehicles') {
       const vehicles = parameters.vehicles.filter((v) => VEHICLES.includes(v));
 
       if (vehicles.length === 0) {
@@ -94,8 +88,8 @@ events.on("message", async (event) => {
 
       await Promise.all(vehicles.map((vehicle) => setVehicleReturned(vehicle)));
 
-      output.push(`:house: I've marked ${vehicles.join(", ")} as returned`);
-    } else if (intent === "Locate Vehicle") {
+      output.push(`:house: I've marked ${vehicles.join(', ')} as returned`);
+    } else if (intent === 'Locate Vehicle') {
       if (!direct && !mentioned) {
         continue;
       }
@@ -117,7 +111,7 @@ events.on("message", async (event) => {
       } else {
         output.push(`:house: AFAIK ${vehicle} is at HQ`);
       }
-    } else if (intent === "Locate Vehicles") {
+    } else if (intent === 'Locate Vehicles') {
       if (!direct && !mentioned) {
         continue;
       }
@@ -125,15 +119,15 @@ events.on("message", async (event) => {
       const out = await getVehiclesOut();
 
       if (out && out.length > 0) {
-        output.push("The following vehicles are away: " + out.map((info) => {
+        output.push('The following vehicles are away: ' + out.map((info) => {
           if (info.with) {
             return `${info.vehicle} with ${info.with}`;
           } else {
             return info.vehicle;
           }
-        }).join(", "));
+        }).join(', '));
       } else {
-        output.push(":house: AFAIK all vehicles are at LHQ");
+        output.push(':house: AFAIK all vehicles are at LHQ');
       }
     }
   }
@@ -143,12 +137,11 @@ events.on("message", async (event) => {
 
     await client.chat.postMessage({
       channel: event.channel,
-      text: output.join("\n"),
+      text: output.join('\n'),
       thread_ts: event.ts,
     });
   }
-});
+}
 
-events.on("error", console.error);
-
-export const handler = events.expressMiddleware();
+exports.handler = async function(req, res) {
+};
