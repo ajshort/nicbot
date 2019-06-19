@@ -1,6 +1,7 @@
 service: nicbot
 
 plugins:
+  - serverless-plugin-common-excludes
   - serverless-offline
   - serverless-pseudo-parameters
 
