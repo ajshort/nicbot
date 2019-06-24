@@ -1,20 +1,12 @@
-const { BOT_ID, BOT_USER_ID, CHANNELS, VEHICLES } = require('./config');
+const WolApi = require('./wol-api');
+const { BOT_ID, BOT_USER_ID, CHANNELS } = require('./config');
 const { parseProtoStruct } = require('./utils');
-const { getVehiclesOut, getVehicleWith, setVehicleReturned, setVehicleWith } = require('./vehicles');
 
 const { WebClient } = require('@slack/client');
-const { SessionClient } = require('dialogflow');
+const { SessionsClient } = require('dialogflow');
 const uuid = require('uuid');
 
 async function handleEvent(event) {
-  // Ignore messags we've already seen.
-  if (seen.includes(event.ts)) {
-    return;
-  }
-
-  seen.unshift(event.ts);
-  seen = seen.slice(0, 10);
-
   // Ignore messages from ourselves.
   if (event.bot_id === BOT_ID) {
     return;
@@ -28,6 +20,11 @@ async function handleEvent(event) {
   if (!direct && !mentioned && !lurk) {
     return;
   }
+
+  // GraphQL API.
+  const endpoint = process.env.WOL_API_URL || 'https://wol-api.ajshort.now.sh/graphql';
+  const token = process.env.WOL_API_TOKEN;
+  const api = new WolApi(endpoint, token);
 
   // Break up input into sentences and put each through dialogflow in a sesson.
   let text = event.text;
@@ -46,7 +43,10 @@ async function handleEvent(event) {
   // Response sentences.
   const output = [];
 
-  const sessions = new SessionsClient();
+  const sessions = new SessionsClient({
+    client_email: process.env.GOOGLE_API_CLIENT_EMAIL,
+    credentials: JSON.parse(process.env.GOOGLE_API_PRIVATE_KEY),
+  });
   const sessionPath = sessions.sessionPath(process.env.DIALOGFLOW_PROJECT_ID, uuid.v4());
 
   for (const sentence of sentences) {
@@ -59,7 +59,7 @@ async function handleEvent(event) {
 
     const result = response[0].queryResult;
 
-    if (result.intentDetectionConfidence < 0.66) {
+    if (result.intentDetectionConfidence < 0.5) {
       continue;
     }
 
@@ -67,26 +67,26 @@ async function handleEvent(event) {
     const parameters = parseProtoStruct(result.parameters);
 
     if (intent === 'Take Vehicles') {
-      const { name, date } = parameters;
-      const vehicles = parameters.vehicles.filter((v) => VEHICLES.includes(v));
+      const { name } = parameters;
+      const vehicles = parameters.vehicles;
 
       if (vehicles.length === 0) {
         continue;
       }
 
       await Promise.all(vehicles.map((vehicle) => {
-        return setVehicleWith(vehicle, name, new Date(date), sentence);
+        return api.setVehicleAway(vehicle, name, sentence);
       }));
 
       output.push(`:car: I've marked ${vehicles.join(', ')} as taken`);
     } else if (intent === 'Return Vehicles') {
-      const vehicles = parameters.vehicles.filter((v) => VEHICLES.includes(v));
+      const vehicles = parameters.vehicles;
 
       if (vehicles.length === 0) {
         continue;
       }
 
-      await Promise.all(vehicles.map((vehicle) => setVehicleReturned(vehicle)));
+      await Promise.all(vehicles.map(vehicle => api.returnVehicle(vehicle)));
 
       output.push(`:house: I've marked ${vehicles.join(', ')} as returned`);
     } else if (intent === 'Locate Vehicle') {
@@ -94,36 +94,36 @@ async function handleEvent(event) {
         continue;
       }
 
-      const vehicle = parameters.vehicle;
+      const vehicles = await api.fetchVehicles();
+      const vehicle = vehicles.find(vehicle => vehicle.callsign === parameters.vehicle);
 
-      if (!VEHICLES.includes(vehicle)) {
+      if (!vehicle) {
         continue;
       }
 
-      const info = await getVehicleWith(vehicle);
-
-      if (info) {
-        if (info.with) {
-          output.push(`${vehicle} is out with ${info.with} :information_desk_peson:`);
+      if (vehicle && vehicle.away) {
+        if (vehicle.with) {
+          output.push(`${vehicle.callsign} is out with ${vehicle.with} :information_desk_person:`);
         } else {
-          output.push(`${vehicle} is away but I\'m not sure who with :shrug:`);
+          output.push(`${vehicle.callsign} is away but I\'m not sure who with :shrug:`);
         }
       } else {
-        output.push(`:house: AFAIK ${vehicle} is at HQ`);
+        output.push(`:house: AFAIK ${parameters.vehicle} is at HQ`);
       }
     } else if (intent === 'Locate Vehicles') {
       if (!direct && !mentioned) {
         continue;
       }
 
-      const out = await getVehiclesOut();
+      const vehicles = await api.fetchVehicles();
+      const out = vehicles.filter(vehicle => vehicle.away);
 
       if (out && out.length > 0) {
-        output.push('The following vehicles are away: ' + out.map((info) => {
-          if (info.with) {
-            return `${info.vehicle} with ${info.with}`;
+        output.push('The following vehicles are away: ' + out.map(vehicle => {
+          if (vehicle.with) {
+            return `${vehicle.callsign} with ${vehicle.with}`;
           } else {
-            return info.vehicle;
+            return vehicle.callsign;
           }
         }).join(', '));
       } else {
@@ -141,7 +141,31 @@ async function handleEvent(event) {
       thread_ts: event.ts,
     });
   }
+
+  return output;
 }
 
-exports.handler = async function(req, res) {
+exports.handler = async function(event, _context) {
+  const data = JSON.parse(event.body);
+
+  if (!data.type) {
+    return { statusCode: 400 };
+  }
+
+  if (data.type === 'url_verification') {
+    return { body: data.challenge, statusCode: 200 };
+  }
+
+  if (data.type !== 'event_callback') {
+    return { statusCode: 401 };
+  }
+
+  const output = await handleEvent(data.event);
+  const body = JSON.stringify({ output })
+
+  return {
+    body,
+    headers: { 'Content-Type': 'application/json' },
+    statusCode: 200,
+  };
 };

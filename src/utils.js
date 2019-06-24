@@ -1,13 +1,13 @@
-export function parseProtoValue(value) {
+function parseProtoValue(value) {
   switch (value.kind) {
-    case "listValue":
+    case 'listValue':
       return value.listValue.values.map(parseProtoValue);
-    case "stringValue":
+    case 'stringValue':
       return value.stringValue;
   }
 }
 
-export function parseProtoStruct(proto): { [key: string]: any } {
+exports.parseProtoStruct = function(proto) {
   const result = {};
 
   for (const [key, value] of Object.entries(proto.fields)) {
