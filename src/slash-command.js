@@ -1,5 +1,6 @@
 const { Lambda } = require('aws-sdk');
 const querystring = require('querystring');
+const BomObs = require('./bom-obs');
 
 exports.handler = async (event, _context) => {
   const data = querystring.parse(event.body);
@@ -17,6 +18,17 @@ exports.handler = async (event, _context) => {
     return {
       body: 'Getting your radar image (beep beep beep) :satellite_antenna:',
       statusCode: 200 ,
+    };
+  } else if (command === '/obs') {
+    const bomObs = new BomObs();
+    let obs = await bomObs.reportObservations();
+
+    return {
+      body: `:satellite_antenna:
+  :clock1: *${obs.latestTime.format('h:mm:ssa')}:* rain: ${obs.latestEntry.rain_trace}mm wind: ${obs.latestEntry.wind_spd_kmh}km/h ${obs.latestEntry.wind_dir} gust: ${obs.latestEntry.gust_kmh}km/h
+  :tornado_cloud: *Max Gust:* ${obs.maxGust.date.format('Do h:mm:ssa')} ${obs.maxGust.gustKmh}km/h ${obs.maxGust.direction}
+  :cloud: *Max Wind:* ${obs.maxWind.date.format('Do h:mm:ssa')} ${obs.maxWind.windSpdKmh}km/h ${obs.maxGust.direction}
+  :rain_cloud: *Max Rain:* ${obs.rain.date.format('Do h:mm:ssa')} ${obs.rain.rain}mm `
     };
   } else {
     return { body: 'I don\'t know that command :(', statusCode: 200 };
