@@ -3,7 +3,10 @@ const fetch = require('node-fetch');
 const moment = require('moment');
 
 exports.WEATHER_STATIONS = {
-  bellambi: 'http://www.bom.gov.au/fwo/IDN60801/IDN60801.94749.json'
+  albionpark: 'http://www.bom.gov.au/fwo/IDN60801/IDN60801.95748.json',
+  bellambi: 'http://www.bom.gov.au/fwo/IDN60801/IDN60801.94749.json',
+  portkembla: 'http://www.bom.gov.au/fwo/IDN60801/IDN60801.95745.json',
+  wattamolla: 'http://www.bom.gov.au/fwo/IDN60901/IDN60901.95752.json',
 };
 
 exports.reportObservations = async function(station = 'bellambi') {
@@ -30,6 +33,7 @@ exports.reportObservations = async function(station = 'bellambi') {
       const rain = _.max(data, entry => entry.rain_trace);
 
       return {
+        name: jsonData.observations.header.name,
         latestEntry: latestEntry,
         latestTime: latestTime,
         maxWind: {
