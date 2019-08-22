@@ -33,7 +33,7 @@ exports.reportObservations = async function(station = 'bellambi') {
       const rain = _.max(data, entry => entry.rain_trace);
 
       return {
-        name: jsonData.observations.header.name,
+        name: jsonData.observations.header[0].name,
         latestEntry: latestEntry,
         latestTime: latestTime,
         maxWind: {
