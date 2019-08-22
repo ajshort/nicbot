@@ -1,6 +1,6 @@
+const bomObs = require('./bom-obs');
 const { Lambda } = require('aws-sdk');
 const querystring = require('querystring');
-const BomObs = require('./bom-obs');
 
 exports.handler = async (event, _context) => {
   const data = querystring.parse(event.body);
@@ -20,7 +20,6 @@ exports.handler = async (event, _context) => {
       statusCode: 200 ,
     };
   } else if (command === '/obs') {
-    const bomObs = new BomObs();
     let obs = await bomObs.reportObservations();
 
     return {
