@@ -27,7 +27,7 @@ exports.reportObservations = function(station = 'bellambi') {
     // Grab the max stats
     const maxWind = _.max(data, entry => entry.wind_spd_kmh);
     const maxGust = _.max(data, entry => entry.gust_kmh);
-    const rain = _.max(data, entry => entry.rain_trace);
+    const rain = _.max(data, entry => parseFloat(entry.rain_trace));
 
     return {
       name: jsonData.observations.header[0].name,
