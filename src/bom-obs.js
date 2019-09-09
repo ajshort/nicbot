@@ -10,6 +10,10 @@ exports.WEATHER_STATIONS = {
 };
 
 exports.reportObservations = function(station = 'bellambi') {
+  if (!Object.keys(exports.WEATHER_STATIONS).includes(station)) {
+    station = 'bellambi'
+  }
+
   const url = exports.WEATHER_STATIONS[station];
 
   return axios.get(url).then(response => {
