@@ -20,7 +20,8 @@ exports.handler = async (event, _context) => {
       statusCode: 200 ,
     };
   } else if (command === '/obs') {
-    const obs = await bomObs.reportObservations();
+    const station = data.text ? data.text.trim() : undefined;
+    const obs = await bomObs.reportObservations(station);
 
     const lines = [
       `:clock1: *${obs.latestTime.format('h:mm:ssa')}:* rain: ${obs.latestEntry.rain_trace}mm wind: ${obs.latestEntry.wind_spd_kmh}km/h ${obs.latestEntry.wind_dir} gust: ${obs.latestEntry.gust_kmh}km/h`,
